@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>微信技术支持 Agent Mock</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="chat-shell" aria-label="微信技术支持 Agent Mock">
+      <section class="chat-panel">
+        <header class="chat-header">
+          <div>
+            <p class="eyebrow">WeChat-like Support</p>
+            <h1>技术支持 Agent</h1>
+          </div>
+          <span id="connectionStatus" class="status-pill">后端待连接</span>
+        </header>
+
+        <section id="messageList" class="message-list" aria-live="polite">
+          <article class="message agent">
+            <div class="avatar">A</div>
+            <div class="bubble">
+              你好，我是技术支持 Agent。请描述你遇到的问题，我会先收集必要信息。
+            </div>
+          </article>
+        </section>
+
+        <section id="summaryPanel" class="summary-panel" hidden>
+          <div class="summary-title">工单摘要</div>
+          <dl>
+            <div>
+              <dt>标题</dt>
+              <dd id="summaryTitle">-</dd>
+            </div>
+            <div>
+              <dt>摘要</dt>
+              <dd id="summaryText">-</dd>
+            </div>
+            <div>
+              <dt>状态</dt>
+              <dd id="summaryStatus">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <form id="chatForm" class="composer">
+          <label class="sr-only" for="messageInput">输入消息</label>
+          <input
+            id="messageInput"
+            name="message"
+            type="text"
+            autocomplete="off"
+            placeholder="输入技术问题，例如：数据库连接超时"
+          />
+          <button type="submit">发送</button>
+          <button id="summaryButton" class="secondary" type="button">生成工单摘要</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

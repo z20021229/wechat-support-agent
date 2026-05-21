@@ -15,7 +15,7 @@ wechat-support-agent 是一个“微信远程技术支持 Agent 分身”的 MVP
 - 排查建议生成。
 - 工单摘要生成。
 
-当前仓库处于第 1 阶段：Backend mock API skeleton completed。已完成后端 FastAPI mock 服务，前端聊天页面、真实微信接入、真实 LLM API、SQLite 和知识库读取尚未实现。
+当前仓库处于第 2 阶段：Frontend chat page completed。已完成后端 FastAPI mock 服务和前端模拟聊天页面，真实微信接入、真实 LLM API、SQLite 和知识库读取尚未实现。
 
 ## 技术栈
 - 后端：Python FastAPI
@@ -54,7 +54,7 @@ wechat-support-agent/
 ```
 
 ## 当前状态
-当前状态：第 1 阶段：Backend mock API skeleton completed。
+当前状态：第 2 阶段：Frontend chat page completed。
 
 当前已完成：
 - FastAPI 后端 mock 服务。
@@ -62,9 +62,11 @@ wechat-support-agent/
 - `POST /chat`。
 - `POST /summary`。
 - 后端基础测试 3 passed。
+- 前端模拟微信客服聊天页面。
+- 页面可调用 `POST /chat` 展示 Agent mock 回复。
+- 页面可调用 `POST /summary` 展示 mock 工单摘要。
 
 当前未完成：
-- 未实现前端聊天页面。
 - 未接入真实微信。
 - 未接入真实 LLM API。
 - 未实现 SQLite。
@@ -77,6 +79,12 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload
 ```
+
+## 前端本地使用
+1. 先按上方命令启动后端服务。
+2. 在浏览器中打开 `D:\codex-projects\wechat-support-agent\frontend\index.html`。
+3. 输入 `数据库连接超时` 并点击“发送”，页面会展示用户消息和 Agent mock 回复。
+4. 点击“生成工单摘要”，页面会展示 mock 工单摘要结果。
 
 ## 后续路线图
 - 第 1 阶段：定义后端最小接口契约和 mock Agent 流程。

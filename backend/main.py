@@ -1,12 +1,19 @@
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 
 SERVICE_NAME = "wechat-support-agent"
 
 app = FastAPI(title=SERVICE_NAME)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 
 class ChatRequest(BaseModel):
