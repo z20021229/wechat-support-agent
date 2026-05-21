@@ -15,7 +15,7 @@ wechat-support-agent 是一个“微信远程技术支持 Agent 分身”的 MVP
 - 排查建议生成。
 - 工单摘要生成。
 
-当前仓库仍处于第 0 阶段，以上功能尚未实现。
+当前仓库处于第 1 阶段：Backend mock API skeleton completed。已完成后端 FastAPI mock 服务，前端聊天页面、真实微信接入、真实 LLM API、SQLite 和知识库读取尚未实现。
 
 ## 技术栈
 - 后端：Python FastAPI
@@ -54,9 +54,21 @@ wechat-support-agent/
 ```
 
 ## 当前状态
-当前状态：第 0 阶段，项目初始化。
+当前状态：第 1 阶段：Backend mock API skeleton completed。
 
-本阶段只完成 GitHub 仓库、基础目录、治理文档和多 Agent 工作流文档，不包含业务代码、后端接口或前端页面。
+当前已完成：
+- FastAPI 后端 mock 服务。
+- `GET /health`。
+- `POST /chat`。
+- `POST /summary`。
+- 后端基础测试 3 passed。
+
+当前未完成：
+- 未实现前端聊天页面。
+- 未接入真实微信。
+- 未接入真实 LLM API。
+- 未实现 SQLite。
+- 未实现知识库读取。
 
 ## 后端本地启动
 ```powershell
