@@ -195,6 +195,8 @@ v0.2.0 in progress:
 - Session progress scoring and `ready_for_guidance` have been added.
 - `/chat` now returns `progress` and `troubleshooting_steps`.
 - When enough information is collected, the rule-based Agent returns initial troubleshooting guidance.
+- Session context is isolated by current issue type, and switching issue types resets current `collected_info` / `missing_info`.
+- This prevents stale state from an earlier issue from leaking into a new question.
 
 已完成：
 - FastAPI mock API：`GET /health`、`POST /chat`、`POST /summary`。

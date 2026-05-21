@@ -277,3 +277,45 @@ def test_chat_sessions_do_not_share_collected_info() -> None:
     assert "数据库类型" in data["session_state"]["missing_info"]
     assert "端口" in data["session_state"]["missing_info"]
     assert "telnet 结果" in data["session_state"]["missing_info"]
+
+
+def test_chat_switches_issue_context_without_reusing_database_info() -> None:
+    client.post(
+        "/chat",
+        json={
+            "session_id": "topic-switch-session",
+            "message": "数据库连接超时",
+        },
+    )
+    client.post(
+        "/chat",
+        json={
+            "session_id": "topic-switch-session",
+            "message": "GaussDB，端口8000，telnet不通",
+        },
+    )
+
+    response = client.post(
+        "/chat",
+        json={
+            "session_id": "topic-switch-session",
+            "message": "ugo安装失败",
+        },
+    )
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["classification"]["category"] == "other"
+    assert "GaussDB" not in data["reply"]
+    assert "8000" not in data["reply"]
+    assert "telnet 不通" not in data["reply"]
+    assert "数据库类型：GaussDB" not in data["session_state"]["collected_info"]
+    assert "端口：8000" not in data["session_state"]["collected_info"]
+    assert "telnet 结果：不通" not in data["session_state"]["collected_info"]
+    assert "数据库版本" not in data["session_state"]["missing_info"]
+    assert "连接地址" not in data["session_state"]["missing_info"]
+    assert "ping 结果" not in data["session_state"]["missing_info"]
+    assert "操作系统" in data["session_state"]["missing_info"]
+    assert "安装日志" in data["session_state"]["missing_info"]
+    assert any("安装" in question or "操作系统" in question for question in data["next_questions"])
+    assert data["progress"]["ready_for_guidance"] is False

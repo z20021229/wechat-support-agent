@@ -85,6 +85,12 @@ QUESTION_BY_INFO = {
     "操作步骤": "具体操作步骤是什么？",
     "环境信息": "环境信息是什么？",
     "影响范围": "影响范围是什么？",
+    "产品或组件名称": "产品或组件名称是什么？",
+    "版本": "UGO 版本或安装包版本是什么？",
+    "操作系统": "操作系统类型和版本是什么？",
+    "安装包": "安装包名称和来源是什么？",
+    "安装命令": "安装命令或安装步骤是什么？",
+    "安装日志": "完整安装日志或关键报错是什么？",
 }
 
 TROUBLESHOOTING_STEPS = {
@@ -169,27 +175,43 @@ def _build_guidance_reply(label: str, collected_info: list[str], missing_info: l
 
 def build_support_reply(session_id: str, message: str) -> dict[str, Any]:
     classification = classify_issue(message)
-    knowledge = load_knowledge(classification.category)
     session = update_session_with_message(session_id, "user", message)
+    active_category = session.get("active_category", classification.category)
+    knowledge = load_knowledge(active_category)
+    response_classification = classification.model_dump()
+    if response_classification["category"] != active_category:
+        response_classification = {
+            "category": active_category,
+            "label": {
+                "database_connection": "数据库连接问题",
+                "permission_error": "权限问题",
+                "sql_error": "SQL 执行错误",
+                "performance_issue": "性能问题",
+                "service_unavailable": "服务不可用",
+                "other": "其他问题",
+            }.get(active_category, "其他问题"),
+            "confidence": classification.confidence,
+            "reason": "沿用当前问题上下文",
+        }
     progress = get_session_progress(session)
-    next_questions = _build_dynamic_questions(session["missing_info"], classification.category)
-    troubleshooting_steps = TROUBLESHOOTING_STEPS[classification.category] if progress["ready_for_guidance"] else []
+    next_questions = _build_dynamic_questions(session["missing_info"], active_category)
+    troubleshooting_steps = TROUBLESHOOTING_STEPS[active_category] if progress["ready_for_guidance"] else []
     stage = "guidance" if progress["ready_for_guidance"] else "collecting_info"
     reply = (
-        _build_guidance_reply(classification.label, session["collected_info"], session["missing_info"], troubleshooting_steps)
+        _build_guidance_reply(response_classification["label"], session["collected_info"], session["missing_info"], troubleshooting_steps)
         if progress["ready_for_guidance"]
         else _build_session_reply(
-            classification.label,
+            response_classification["label"],
             session["collected_info"],
             session["missing_info"],
-            FOLLOW_UP_REPLIES[classification.category],
+            FOLLOW_UP_REPLIES[active_category],
         )
     )
 
     return {
         "reply": reply,
         "stage": stage,
-        "classification": classification.model_dump(),
+        "classification": response_classification,
         "knowledge": {
             "file": knowledge["file"],
             "available": knowledge["available"],

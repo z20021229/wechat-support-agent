@@ -15,6 +15,8 @@ REQUIRED_INFO = {
     "other": ["问题背景", "操作步骤", "完整报错", "环境信息", "影响范围"],
 }
 
+INSTALLATION_INFO = ["产品或组件名称", "版本", "操作系统", "安装包", "安装命令", "完整报错", "安装日志", "最近变更"]
+
 GUIDANCE_READY_INFO = {
     "database_connection": {"数据库类型", "端口", "ping 结果", "telnet 结果", "完整报错"},
     "permission_error": {"当前用户", "SQL", "对象名", "完整报错", "授权情况"},
@@ -23,11 +25,15 @@ GUIDANCE_READY_INFO = {
     "service_unavailable": {"服务名称", "启动命令", "进程状态", "端口监听", "日志"},
 }
 
+INSTALLATION_KEYWORDS = ["安装", "部署", "install", "setup", "初始化", "升级", "安装失败", "部署失败", "UGO", "ugo"]
+
 
 def _new_session(session_id: str) -> dict[str, Any]:
     return {
         "session_id": session_id,
         "category": "other",
+        "active_category": "other",
+        "active_issue_text": "",
         "collected_info": [],
         "missing_info": REQUIRED_INFO["other"].copy(),
         "latest_user_message": "",
@@ -52,6 +58,43 @@ def get_or_create_session(session_id: str) -> dict[str, Any]:
 def _add_collected_info(session: dict[str, Any], item: str) -> None:
     if item not in session["collected_info"]:
         session["collected_info"].append(item)
+
+
+def _is_installation_context(content: str) -> bool:
+    return any(keyword.lower() in content.lower() for keyword in INSTALLATION_KEYWORDS)
+
+
+def _required_info_for_session(session: dict[str, Any]) -> list[str]:
+    if session.get("active_category") == "other" and _is_installation_context(session.get("active_issue_text", "")):
+        return INSTALLATION_INFO
+
+    return REQUIRED_INFO.get(session.get("active_category", "other"), REQUIRED_INFO["other"])
+
+
+def _reset_active_issue(session: dict[str, Any], category: str, issue_text: str) -> None:
+    session["category"] = category
+    session["active_category"] = category
+    session["active_issue_text"] = issue_text
+    session["collected_info"] = []
+    session["missing_info"] = _required_info_for_session(session).copy()
+
+
+def _looks_like_new_other_issue(content: str) -> bool:
+    return _is_installation_context(content) or any(keyword in content for keyword in ["失败", "异常", "不可用", "报错"])
+
+
+def _should_switch_issue(session: dict[str, Any], category: str, content: str) -> bool:
+    active_issue_text = session.get("active_issue_text", "")
+    active_category = session.get("active_category", session.get("category", "other"))
+
+    if not active_issue_text:
+        return True
+    if category != "other" and category != active_category:
+        return True
+    if category == "other" and active_category != "other" and _looks_like_new_other_issue(content):
+        return True
+
+    return False
 
 
 def _detect_database_type(content: str) -> str | None:
@@ -128,6 +171,16 @@ def _extract_category_info(session: dict[str, Any], content: str) -> None:
         _add_collected_info(session, "日志：已提供")
     if any(keyword in content for keyword in ["变更", "发布"]):
         _add_collected_info(session, "最近变更：已提供")
+    if _is_installation_context(content):
+        _add_collected_info(session, "产品或组件名称：已提供")
+    if any(keyword in content for keyword in ["操作系统", "Windows", "Linux", "CentOS", "Ubuntu", "麒麟", "统信"]):
+        _add_collected_info(session, "操作系统：已提供")
+    if any(keyword in content for keyword in ["安装包", "package", "rpm", "deb", "zip"]):
+        _add_collected_info(session, "安装包：已提供")
+    if any(keyword in content for keyword in ["安装命令", "install", "setup", "命令"]):
+        _add_collected_info(session, "安装命令：已提供")
+    if "安装日志" in content:
+        _add_collected_info(session, "安装日志：已提供")
 
 
 def _collected_key(item: str) -> str:
@@ -135,14 +188,14 @@ def _collected_key(item: str) -> str:
 
 
 def _update_missing_info(session: dict[str, Any]) -> None:
-    required = REQUIRED_INFO.get(session["category"], REQUIRED_INFO["other"])
+    required = _required_info_for_session(session)
     collected_keys = {_collected_key(item) for item in session["collected_info"]}
     session["missing_info"] = [item for item in required if item not in collected_keys]
 
 
 def get_session_progress(session: dict[str, Any]) -> dict[str, int | float | bool]:
-    category = session.get("category", "other")
-    required = REQUIRED_INFO.get(category, REQUIRED_INFO["other"])
+    category = session.get("active_category", session.get("category", "other"))
+    required = _required_info_for_session(session)
     collected_keys = {_collected_key(item) for item in session.get("collected_info", [])}
     collected_count = len(session.get("collected_info", []))
     missing_count = len(session.get("missing_info", required))
@@ -170,8 +223,8 @@ def update_session_with_message(session_id: str, role: str, content: str) -> dic
     if role == "user":
         session["latest_user_message"] = content
         classification = classify_issue(content)
-        if classification.category != "other" or session["category"] == "other":
-            session["category"] = classification.category
+        if _should_switch_issue(session, classification.category, content):
+            _reset_active_issue(session, classification.category, content)
         _extract_common_info(session, content)
         _extract_category_info(session, content)
         _update_missing_info(session)

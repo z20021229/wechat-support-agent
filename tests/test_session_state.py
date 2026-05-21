@@ -133,3 +133,28 @@ def test_new_database_connection_session_starts_with_missing_info_only() -> None
     assert "数据库类型：GaussDB" not in session["collected_info"]
     assert "端口：8000" not in session["collected_info"]
     assert "telnet 结果：不通" not in session["collected_info"]
+
+
+def test_switching_to_other_issue_resets_database_context() -> None:
+    update_session_with_message("demo-session", "user", "数据库连接超时")
+    database_session = update_session_with_message("demo-session", "user", "GaussDB，端口8000，telnet不通")
+
+    assert "数据库类型：GaussDB" in database_session["collected_info"]
+    assert "端口：8000" in database_session["collected_info"]
+    assert "telnet 结果：不通" in database_session["collected_info"]
+
+    install_session = update_session_with_message("demo-session", "user", "ugo安装失败")
+    progress = get_session_progress(install_session)
+
+    assert install_session["active_category"] == "other"
+    assert install_session["active_issue_text"] == "ugo安装失败"
+    assert "数据库类型：GaussDB" not in install_session["collected_info"]
+    assert "端口：8000" not in install_session["collected_info"]
+    assert "telnet 结果：不通" not in install_session["collected_info"]
+    assert "数据库版本" not in install_session["missing_info"]
+    assert "连接地址" not in install_session["missing_info"]
+    assert "ping 结果" not in install_session["missing_info"]
+    assert "操作系统" in install_session["missing_info"]
+    assert "安装命令" in install_session["missing_info"]
+    assert "安装日志" in install_session["missing_info"]
+    assert progress["ready_for_guidance"] is False
