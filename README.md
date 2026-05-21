@@ -58,6 +58,14 @@ wechat-support-agent/
 
 本阶段只完成 GitHub 仓库、基础目录、治理文档和多 Agent 工作流文档，不包含业务代码、后端接口或前端页面。
 
+## 后端本地启动
+```powershell
+cd D:\codex-projects\wechat-support-agent
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload
+```
+
 ## 后续路线图
 - 第 1 阶段：定义后端最小接口契约和 mock Agent 流程。
 - 第 2 阶段：实现 Web 模拟咨询页面并连接 mock 后端。
