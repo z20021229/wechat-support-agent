@@ -28,20 +28,7 @@
 
         <section id="summaryPanel" class="summary-panel" hidden>
           <div class="summary-title">工单摘要</div>
-          <dl>
-            <div>
-              <dt>标题</dt>
-              <dd id="summaryTitle">-</dd>
-            </div>
-            <div>
-              <dt>摘要</dt>
-              <dd id="summaryText">-</dd>
-            </div>
-            <div>
-              <dt>状态</dt>
-              <dd id="summaryStatus">-</dd>
-            </div>
-          </dl>
+          <div id="summaryContent" class="summary-content"></div>
         </section>
 
         <form id="chatForm" class="composer">
@@ -55,6 +42,7 @@
           />
           <button type="submit">发送</button>
           <button id="summaryButton" class="secondary" type="button">生成工单摘要</button>
+          <button id="clearButton" class="ghost" type="button">清空会话</button>
         </form>
       </section>
     </main>

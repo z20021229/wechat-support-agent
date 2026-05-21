@@ -5,15 +5,15 @@ const messageList = document.querySelector("#messageList");
 const chatForm = document.querySelector("#chatForm");
 const messageInput = document.querySelector("#messageInput");
 const summaryButton = document.querySelector("#summaryButton");
+const clearButton = document.querySelector("#clearButton");
 const connectionStatus = document.querySelector("#connectionStatus");
 const summaryPanel = document.querySelector("#summaryPanel");
-const summaryTitle = document.querySelector("#summaryTitle");
-const summaryText = document.querySelector("#summaryText");
-const summaryStatus = document.querySelector("#summaryStatus");
+const summaryContent = document.querySelector("#summaryContent");
 
 const messages = [];
+const welcomeText = "你好，我是技术支持 Agent。请描述你遇到的问题，我会先收集必要信息。";
 
-function appendMessage(role, text) {
+function appendMessage(role, text, metaText = "") {
   const item = document.createElement("article");
   item.className = `message ${role}`;
 
@@ -25,6 +25,13 @@ function appendMessage(role, text) {
   bubble.className = "bubble";
   bubble.textContent = text;
 
+  if (metaText) {
+    const meta = document.createElement("div");
+    meta.className = "message-meta";
+    meta.textContent = metaText;
+    bubble.appendChild(meta);
+  }
+
   item.append(avatar, bubble);
   messageList.appendChild(item);
   messageList.scrollTop = messageList.scrollHeight;
@@ -34,6 +41,7 @@ function setBusy(isBusy) {
   messageInput.disabled = isBusy;
   chatForm.querySelector("button[type='submit']").disabled = isBusy;
   summaryButton.disabled = isBusy;
+  clearButton.disabled = isBusy;
 }
 
 function setStatus(text, isOk = true) {
@@ -57,6 +65,64 @@ async function postJson(path, payload) {
   return response.json();
 }
 
+function createList(items = []) {
+  const list = document.createElement("ul");
+  list.className = "summary-list";
+
+  const safeItems = Array.isArray(items) && items.length > 0 ? items : ["待补充"];
+  safeItems.forEach((item) => {
+    const listItem = document.createElement("li");
+    listItem.textContent = item;
+    list.appendChild(listItem);
+  });
+
+  return list;
+}
+
+function appendSummarySection(label, value) {
+  const section = document.createElement("section");
+  section.className = "summary-section";
+
+  const heading = document.createElement("h2");
+  heading.textContent = label;
+  section.appendChild(heading);
+
+  if (Array.isArray(value)) {
+    section.appendChild(createList(value));
+  } else {
+    const text = document.createElement("p");
+    text.textContent = value || "待补充";
+    section.appendChild(text);
+  }
+
+  summaryContent.appendChild(section);
+}
+
+function renderSummary(data) {
+  summaryContent.replaceChildren();
+
+  appendSummarySection("标题", data.title);
+  appendSummarySection("分类", `${data.label || "未分类"} / ${data.category || "unknown"}`);
+  appendSummarySection("问题现象", data.problem_description);
+  appendSummarySection("已收集信息", data.collected_info);
+  appendSummarySection("可能原因", data.possible_causes);
+  appendSummarySection("建议排查步骤", data.suggested_steps);
+  appendSummarySection("状态", data.status);
+  appendSummarySection("后续跟进", data.follow_up);
+
+  summaryPanel.hidden = false;
+}
+
+function resetConversation() {
+  messages.length = 0;
+  summaryContent.replaceChildren();
+  summaryPanel.hidden = true;
+  messageList.replaceChildren();
+  appendMessage("agent", welcomeText);
+  messageInput.value = "";
+  messageInput.focus();
+}
+
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -76,7 +142,11 @@ chatForm.addEventListener("submit", async (event) => {
       message,
     });
 
-    appendMessage("agent", data.reply);
+    const categoryLabel = data.classification?.label
+      ? `分类：${data.classification.label}`
+      : "";
+
+    appendMessage("agent", data.reply, categoryLabel);
     messages.push({ role: "agent", content: data.reply, stage: data.stage });
     setStatus("后端已连接");
   } catch (error) {
@@ -97,10 +167,7 @@ summaryButton.addEventListener("click", async () => {
       messages,
     });
 
-    summaryTitle.textContent = data.title;
-    summaryText.textContent = data.summary;
-    summaryStatus.textContent = data.status;
-    summaryPanel.hidden = false;
+    renderSummary(data);
     setStatus("后端已连接");
   } catch (error) {
     appendMessage("agent", "工单摘要生成失败，请确认后端服务已启动。");
@@ -109,3 +176,5 @@ summaryButton.addEventListener("click", async () => {
     setBusy(false);
   }
 });
+
+clearButton.addEventListener("click", resetConversation);

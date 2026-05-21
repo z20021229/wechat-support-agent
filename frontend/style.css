@@ -133,6 +133,14 @@ h1 {
   word-break: break-word;
 }
 
+.message-meta {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgb(148 163 184 / 35%);
+  color: #64748b;
+  font-size: 12px;
+}
+
 .message.user .bubble {
   background: #95ec69;
   border-color: #86d95d;
@@ -151,29 +159,46 @@ h1 {
   font-weight: 700;
 }
 
-dl {
+.summary-content {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.summary-section {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.summary-section h2 {
+  margin: 0 0 6px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.summary-section p {
   margin: 0;
+  line-height: 1.5;
 }
 
-dl > div {
-  display: grid;
-  grid-template-columns: 64px 1fr;
-  gap: 10px;
-}
-
-dt {
-  color: #64748b;
-}
-
-dd {
+.summary-list {
   margin: 0;
+  padding-left: 18px;
+}
+
+.summary-list li {
+  margin: 4px 0;
+  line-height: 1.45;
 }
 
 .composer {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: 10px;
   padding: 14px;
   background: #ffffff;
@@ -205,6 +230,11 @@ button {
 
 button.secondary {
   background: #334155;
+}
+
+button.ghost {
+  background: #e2e8f0;
+  color: #334155;
 }
 
 button:disabled,
@@ -240,6 +270,11 @@ input:disabled {
 
   .composer {
     grid-template-columns: 1fr;
+  }
+
+  .summary-content {
+    grid-template-columns: 1fr;
+    max-height: 34vh;
   }
 
   .message {
