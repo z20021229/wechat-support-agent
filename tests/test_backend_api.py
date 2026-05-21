@@ -28,8 +28,14 @@ def test_chat_returns_mock_reply() -> None:
     assert response.status_code == 200
     assert response.json() == {
         "session_id": "demo-session",
-        "reply": "我已收到你的问题，请先补充数据库类型、版本、完整报错和连接方式。",
+        "reply": "请补充数据库类型、版本、连接地址、端口、完整报错，以及 ping/telnet 结果。",
         "stage": "collecting_info",
+        "classification": {
+            "category": "database_connection",
+            "label": "数据库连接问题",
+            "confidence": 0.8,
+            "reason": "命中关键词：连接、超时",
+        },
     }
 
 
