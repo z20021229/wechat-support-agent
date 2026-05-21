@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from backend.classifier import ClassificationResult, classify_issue
+from backend.agent import build_support_reply
+from backend.classifier import ClassificationResult
 
 
 SERVICE_NAME = "wechat-support-agent"
@@ -28,6 +29,8 @@ class ChatResponse(BaseModel):
     reply: str
     stage: str
     classification: ClassificationResult
+    knowledge: dict[str, str | bool]
+    next_questions: list[str]
 
 
 class SummaryRequest(BaseModel):
@@ -41,16 +44,6 @@ class SummaryResponse(BaseModel):
     status: str
 
 
-FOLLOW_UP_REPLIES = {
-    "database_connection": "请补充数据库类型、版本、连接地址、端口、完整报错，以及 ping/telnet 结果。",
-    "permission_error": "请补充当前用户、执行的操作、完整报错，以及相关对象权限信息。",
-    "sql_error": "请补充完整 SQL、完整报错、数据库类型和版本。",
-    "performance_issue": "请补充慢 SQL、执行耗时、数据量、执行计划和系统资源情况。",
-    "service_unavailable": "请补充服务名称、启动命令、日志、端口监听和进程状态。",
-    "other": "请补充问题背景、操作步骤、完整报错和环境信息。",
-}
-
-
 @app.get("/health")
 def health() -> dict[str, str]:
     return {
@@ -61,12 +54,10 @@ def health() -> dict[str, str]:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
-    classification = classify_issue(request.message)
+    support_reply = build_support_reply(request.message)
     return ChatResponse(
         session_id=request.session_id,
-        reply=FOLLOW_UP_REPLIES[classification.category],
-        stage="collecting_info",
-        classification=classification,
+        **support_reply,
     )
 
 
