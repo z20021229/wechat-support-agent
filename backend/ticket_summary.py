@@ -133,6 +133,15 @@ def _user_contents(messages: list[Any]) -> list[str]:
     return contents
 
 
+def _latest_issue_text(user_contents: list[str]) -> str:
+    for content in reversed(user_contents):
+        classification = classify_issue(content)
+        if classification.category != "other":
+            return content
+
+    return user_contents[-1] if user_contents else ""
+
+
 def _detect_database_type(text: str) -> str | None:
     lower_text = text.lower()
     for database_name in DATABASE_NAMES:
@@ -177,7 +186,8 @@ def _collect_info(text: str) -> list[str]:
 def generate_ticket_summary(session_id: str, messages: list[Any]) -> dict[str, Any]:
     user_contents = _user_contents(messages)
     combined_text = " ".join(user_contents)
-    classification = classify_issue(combined_text) if combined_text else classify_issue("")
+    issue_text = _latest_issue_text(user_contents)
+    classification = classify_issue(issue_text)
     rules = SUMMARY_RULES[classification.category]
     collected_info = _collect_info(combined_text)
 

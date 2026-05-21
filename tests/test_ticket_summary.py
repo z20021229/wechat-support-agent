@@ -88,3 +88,39 @@ def test_service_unavailable_summary() -> None:
     assert summary["category"] == "service_unavailable"
     assert summary["label"] == "服务不可用"
     assert_required_fields(summary)
+
+
+def test_summary_prefers_latest_classifiable_user_issue() -> None:
+    summary = generate_ticket_summary(
+        "demo-session",
+        [
+            {"role": "user", "content": "数据库连接超时"},
+            {"role": "agent", "content": "请补充数据库类型、版本、端口等"},
+            {"role": "user", "content": "执行SQL提示权限不足"},
+            {"role": "agent", "content": "请补充当前用户、执行SQL、对象名等"},
+            {"role": "user", "content": "SQL执行报错 ORA-00942 表不存在"},
+        ],
+    )
+
+    assert summary["title"] == "SQL 执行错误问题"
+    assert summary["category"] == "sql_error"
+    assert summary["label"] == "SQL 执行错误"
+    assert "SQL 相关信息已提供" in summary["collected_info"]
+    assert "ORA 错误码已提供" in summary["collected_info"]
+    assert_required_fields(summary)
+
+
+def test_latest_permission_issue_takes_priority_over_earlier_connection_issue() -> None:
+    summary = generate_ticket_summary(
+        "demo-session",
+        [
+            {"role": "user", "content": "数据库连接超时"},
+            {"role": "agent", "content": "请补充数据库连接信息"},
+            {"role": "user", "content": "执行 SQL 提示权限不足 denied"},
+        ],
+    )
+
+    assert summary["title"] == "权限不足问题"
+    assert summary["category"] == "permission_error"
+    assert summary["label"] == "权限问题"
+    assert_required_fields(summary)
