@@ -34,6 +34,8 @@ class ChatResponse(BaseModel):
     knowledge: dict[str, str | bool]
     next_questions: list[str]
     session_state: dict[str, list[str]]
+    progress: dict[str, Any]
+    troubleshooting_steps: list[str]
 
 
 class SummaryRequest(BaseModel):

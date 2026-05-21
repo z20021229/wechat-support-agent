@@ -192,6 +192,9 @@ v0.2.0 in progress:
 - The chat page can demonstrate dynamic follow-up questions across turns.
 - The frontend creates a fresh `session_id` for each new conversation.
 - Clearing a conversation resets the current in-memory session to avoid stale state.
+- Session progress scoring and `ready_for_guidance` have been added.
+- `/chat` now returns `progress` and `troubleshooting_steps`.
+- When enough information is collected, the rule-based Agent returns initial troubleshooting guidance.
 
 已完成：
 - FastAPI mock API：`GET /health`、`POST /chat`、`POST /summary`。
@@ -205,6 +208,7 @@ v0.2.0 in progress:
 ## 未完成项
 - 当前 session state 仅为内存版，服务重启后会话丢失。
 - v0.3.0 才会实现 SQLite 会话和工单持久化。
+- 前端暂未专门展示 `troubleshooting_steps`。
 - 未接入真实微信。
 - 未接入真实 LLM API。
 - 未实现 SQLite。

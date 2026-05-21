@@ -2,7 +2,7 @@ from typing import Any
 
 from backend.classifier import classify_issue
 from backend.knowledge_base import load_knowledge
-from backend.session_state import update_session_with_message
+from backend.session_state import get_session_progress, update_session_with_message
 
 
 FOLLOW_UP_REPLIES = {
@@ -87,6 +87,51 @@ QUESTION_BY_INFO = {
     "影响范围": "影响范围是什么？",
 }
 
+TROUBLESHOOTING_STEPS = {
+    "database_connection": [
+        "检查数据库服务是否正常运行",
+        "检查端口监听状态",
+        "检查防火墙或安全组策略",
+        "使用 ping/telnet/nc 验证网络连通性",
+        "确认客户端连接地址和端口配置",
+    ],
+    "permission_error": [
+        "确认当前执行用户",
+        "检查对象权限",
+        "检查角色授权",
+        "核对 grant/revoke 记录",
+        "使用最小权限原则补充授权",
+    ],
+    "sql_error": [
+        "核对完整 SQL",
+        "检查表名、字段名和对象是否存在",
+        "检查数据库语法兼容性",
+        "检查参数或数据类型是否匹配",
+        "复现最小 SQL 示例",
+    ],
+    "performance_issue": [
+        "获取慢 SQL",
+        "查看执行计划",
+        "检查索引使用情况",
+        "检查 CPU、内存、IO",
+        "检查锁等待和并发情况",
+    ],
+    "service_unavailable": [
+        "检查服务进程是否存在",
+        "检查端口监听状态",
+        "查看启动日志",
+        "检查最近配置变更",
+        "尝试人工确认后重启服务",
+    ],
+    "other": [
+        "明确问题背景",
+        "复现操作步骤",
+        "收集完整报错",
+        "确认影响范围",
+        "判断是否需要转人工",
+    ],
+}
+
 
 def _build_dynamic_questions(missing_info: list[str], fallback_category: str) -> list[str]:
     if "数据库类型" in missing_info and "数据库版本" in missing_info:
@@ -111,20 +156,39 @@ def _build_session_reply(label: str, collected_info: list[str], missing_info: li
     return f"我判断这可能是{label}。当前关键信息已基本收集，可以继续生成工单摘要或进入人工排查。"
 
 
+def _build_guidance_reply(label: str, collected_info: list[str], missing_info: list[str], steps: list[str]) -> str:
+    collected_text = "、".join(collected_info[:5]) or "暂无"
+    missing_text = "、".join(missing_info[:5]) or "暂无"
+    step_text = "；".join(steps[:3])
+    return (
+        f"我判断这可能是{label}。目前已收集：{collected_text}。"
+        f"仍缺失：{missing_text}。可以先按以下方向排查：{step_text}。"
+        "后续请继续补充缺失信息，便于收敛问题范围。"
+    )
+
+
 def build_support_reply(session_id: str, message: str) -> dict[str, Any]:
     classification = classify_issue(message)
     knowledge = load_knowledge(classification.category)
     session = update_session_with_message(session_id, "user", message)
+    progress = get_session_progress(session)
     next_questions = _build_dynamic_questions(session["missing_info"], classification.category)
-
-    return {
-        "reply": _build_session_reply(
+    troubleshooting_steps = TROUBLESHOOTING_STEPS[classification.category] if progress["ready_for_guidance"] else []
+    stage = "guidance" if progress["ready_for_guidance"] else "collecting_info"
+    reply = (
+        _build_guidance_reply(classification.label, session["collected_info"], session["missing_info"], troubleshooting_steps)
+        if progress["ready_for_guidance"]
+        else _build_session_reply(
             classification.label,
             session["collected_info"],
             session["missing_info"],
             FOLLOW_UP_REPLIES[classification.category],
-        ),
-        "stage": "collecting_info",
+        )
+    )
+
+    return {
+        "reply": reply,
+        "stage": stage,
         "classification": classification.model_dump(),
         "knowledge": {
             "file": knowledge["file"],
@@ -135,4 +199,6 @@ def build_support_reply(session_id: str, message: str) -> dict[str, Any]:
             "collected_info": session["collected_info"],
             "missing_info": session["missing_info"],
         },
+        "progress": progress,
+        "troubleshooting_steps": troubleshooting_steps,
     }

@@ -52,6 +52,13 @@ def test_chat_returns_mock_reply() -> None:
         "collected_info": [],
         "missing_info": ["数据库类型", "数据库版本", "连接地址", "端口", "完整报错", "ping 结果", "telnet 结果"],
     }
+    assert data["progress"] == {
+        "collected_count": 0,
+        "missing_count": 7,
+        "completion_ratio": 0,
+        "ready_for_guidance": False,
+    }
+    assert data["troubleshooting_steps"] == []
 
 
 def test_chat_returns_dynamic_next_questions_from_session_state() -> None:
@@ -82,6 +89,35 @@ def test_chat_returns_dynamic_next_questions_from_session_state() -> None:
     assert "telnet 结果" not in data["session_state"]["missing_info"]
     assert "端口是什么？" not in data["next_questions"]
     assert "telnet 检查结果是什么？" not in data["next_questions"]
+
+
+def test_chat_returns_guidance_when_session_has_enough_info() -> None:
+    client.post(
+        "/chat",
+        json={
+            "session_id": "guidance-session",
+            "message": "数据库连接超时",
+        },
+    )
+
+    response = client.post(
+        "/chat",
+        json={
+            "session_id": "guidance-session",
+            "message": "端口 8000，telnet 不通",
+        },
+    )
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["stage"] == "guidance"
+    assert data["progress"]["ready_for_guidance"] is True
+    assert data["progress"]["collected_count"] == 2
+    assert data["troubleshooting_steps"]
+    assert "检查端口监听状态" in data["troubleshooting_steps"]
+    assert "初步" not in data["troubleshooting_steps"]
+    assert "端口：8000" in data["session_state"]["collected_info"]
+    assert "telnet 结果：不通" in data["session_state"]["collected_info"]
 
 
 def test_summary_returns_mock_ticket_summary() -> None:

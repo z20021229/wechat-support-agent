@@ -15,6 +15,14 @@ REQUIRED_INFO = {
     "other": ["问题背景", "操作步骤", "完整报错", "环境信息", "影响范围"],
 }
 
+GUIDANCE_READY_INFO = {
+    "database_connection": {"数据库类型", "端口", "ping 结果", "telnet 结果", "完整报错"},
+    "permission_error": {"当前用户", "SQL", "对象名", "完整报错", "授权情况"},
+    "sql_error": {"SQL", "完整报错", "数据库类型", "对象名", "表结构"},
+    "performance_issue": {"慢 SQL", "执行耗时", "数据量", "执行计划", "CPU", "内存", "IO"},
+    "service_unavailable": {"服务名称", "启动命令", "进程状态", "端口监听", "日志"},
+}
+
 
 def _new_session(session_id: str) -> dict[str, Any]:
     return {
@@ -130,6 +138,29 @@ def _update_missing_info(session: dict[str, Any]) -> None:
     required = REQUIRED_INFO.get(session["category"], REQUIRED_INFO["other"])
     collected_keys = {_collected_key(item) for item in session["collected_info"]}
     session["missing_info"] = [item for item in required if item not in collected_keys]
+
+
+def get_session_progress(session: dict[str, Any]) -> dict[str, int | float | bool]:
+    category = session.get("category", "other")
+    required = REQUIRED_INFO.get(category, REQUIRED_INFO["other"])
+    collected_keys = {_collected_key(item) for item in session.get("collected_info", [])}
+    collected_count = len(session.get("collected_info", []))
+    missing_count = len(session.get("missing_info", required))
+    total_count = collected_count + missing_count
+    completion_ratio = round(collected_count / total_count, 2) if total_count else 0
+
+    if category == "other":
+        ready_for_guidance = collected_count >= 2
+    else:
+        ready_keys = GUIDANCE_READY_INFO.get(category, set())
+        ready_for_guidance = len(collected_keys & ready_keys) >= 2
+
+    return {
+        "collected_count": collected_count,
+        "missing_count": missing_count,
+        "completion_ratio": completion_ratio,
+        "ready_for_guidance": ready_for_guidance,
+    }
 
 
 def update_session_with_message(session_id: str, role: str, content: str) -> dict[str, Any]:

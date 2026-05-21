@@ -1,4 +1,5 @@
 from backend.session_state import (
+    get_session_progress,
     get_or_create_session,
     reset_session,
     reset_sessions,
@@ -17,6 +18,17 @@ def test_new_session_can_be_created() -> None:
     assert session["category"] == "other"
     assert session["messages"] == []
     assert session["collected_info"] == []
+
+
+def test_new_session_progress_starts_at_zero() -> None:
+    session = get_or_create_session("demo-session")
+
+    assert get_session_progress(session) == {
+        "collected_count": 0,
+        "missing_count": 5,
+        "completion_ratio": 0,
+        "ready_for_guidance": False,
+    }
 
 
 def test_user_message_is_written_to_messages() -> None:
@@ -39,6 +51,16 @@ def test_database_connection_extracts_port() -> None:
     assert "端口：8000" in session["collected_info"]
 
 
+def test_progress_increases_after_collecting_info() -> None:
+    update_session_with_message("demo-session", "user", "数据库连接超时")
+    session = update_session_with_message("demo-session", "user", "端口 8000")
+    progress = get_session_progress(session)
+
+    assert progress["collected_count"] == 1
+    assert progress["completion_ratio"] > 0
+    assert progress["ready_for_guidance"] is False
+
+
 def test_database_connection_extracts_telnet_failure() -> None:
     update_session_with_message("demo-session", "user", "数据库连接超时")
     session = update_session_with_message("demo-session", "user", "telnet 不通")
@@ -53,6 +75,16 @@ def test_collected_info_is_removed_from_missing_info() -> None:
     assert "端口" not in session["missing_info"]
     assert "telnet 结果" not in session["missing_info"]
     assert "数据库类型" not in session["missing_info"]
+
+
+def test_database_connection_ready_for_guidance_with_port_and_telnet() -> None:
+    update_session_with_message("demo-session", "user", "数据库连接超时")
+    session = update_session_with_message("demo-session", "user", "端口 8000，telnet 不通")
+    progress = get_session_progress(session)
+
+    assert progress["ready_for_guidance"] is True
+    assert progress["collected_count"] == 2
+    assert progress["missing_count"] == 5
 
 
 def test_sessions_are_isolated_by_session_id() -> None:
