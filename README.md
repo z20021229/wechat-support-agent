@@ -188,6 +188,8 @@ v0.2.0 in progress:
 - Session state management added.
 - In-memory session tracking.
 - Dynamic next questions based on missing information.
+- Frontend session state display added for collected and missing information.
+- The chat page can demonstrate dynamic follow-up questions across turns.
 
 已完成：
 - FastAPI mock API：`GET /health`、`POST /chat`、`POST /summary`。

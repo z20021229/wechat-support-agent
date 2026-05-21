@@ -9,6 +9,9 @@ const clearButton = document.querySelector("#clearButton");
 const connectionStatus = document.querySelector("#connectionStatus");
 const summaryPanel = document.querySelector("#summaryPanel");
 const summaryContent = document.querySelector("#summaryContent");
+const sessionStatePanel = document.querySelector("#sessionStatePanel");
+const collectedInfoList = document.querySelector("#collectedInfoList");
+const missingInfoList = document.querySelector("#missingInfoList");
 
 const messages = [];
 const welcomeText = "你好，我是技术支持 Agent。请描述你遇到的问题，我会先收集必要信息。";
@@ -79,6 +82,30 @@ function createList(items = []) {
   return list;
 }
 
+function renderStateList(listElement, items = [], emptyText) {
+  listElement.replaceChildren();
+
+  const safeItems = Array.isArray(items) && items.length > 0 ? items : [emptyText];
+  safeItems.forEach((item) => {
+    const listItem = document.createElement("li");
+    listItem.textContent = item;
+    listElement.appendChild(listItem);
+  });
+}
+
+function renderSessionState(sessionState) {
+  if (!sessionState) {
+    sessionStatePanel.hidden = true;
+    collectedInfoList.replaceChildren();
+    missingInfoList.replaceChildren();
+    return;
+  }
+
+  renderStateList(collectedInfoList, sessionState.collected_info, "暂无已收集信息");
+  renderStateList(missingInfoList, sessionState.missing_info, "暂无待补充信息");
+  sessionStatePanel.hidden = false;
+}
+
 function appendSummarySection(label, value) {
   const section = document.createElement("section");
   section.className = "summary-section";
@@ -117,6 +144,7 @@ function resetConversation() {
   messages.length = 0;
   summaryContent.replaceChildren();
   summaryPanel.hidden = true;
+  renderSessionState(null);
   messageList.replaceChildren();
   appendMessage("agent", welcomeText);
   messageInput.value = "";
@@ -148,6 +176,7 @@ chatForm.addEventListener("submit", async (event) => {
 
     appendMessage("agent", data.reply, categoryLabel);
     messages.push({ role: "agent", content: data.reply, stage: data.stage });
+    renderSessionState(data.session_state);
     setStatus("后端已连接");
   } catch (error) {
     appendMessage("agent", "后端暂时无法连接，请确认 FastAPI 服务已启动。");

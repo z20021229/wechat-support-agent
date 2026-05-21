@@ -26,6 +26,20 @@
           </article>
         </section>
 
+        <section id="sessionStatePanel" class="session-state-panel" hidden>
+          <div class="panel-title">会话状态</div>
+          <div class="session-state-grid">
+            <section class="session-state-section">
+              <h2>已收集信息</h2>
+              <ul id="collectedInfoList" class="state-list collected"></ul>
+            </section>
+            <section class="session-state-section">
+              <h2>待补充信息</h2>
+              <ul id="missingInfoList" class="state-list missing"></ul>
+            </section>
+          </div>
+        </section>
+
         <section id="summaryPanel" class="summary-panel" hidden>
           <div class="summary-title">工单摘要</div>
           <div id="summaryContent" class="summary-content"></div>
