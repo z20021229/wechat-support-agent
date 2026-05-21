@@ -208,6 +208,8 @@ python -m pytest tests/test_ticket_summary.py
 - 高风险操作，例如删除、重启、修改配置、授权变更，必须人工确认。
 
 ## 后续路线图
+详细版本规划见 [docs/roadmap.md](docs/roadmap.md) 和 [docs/version_plan.md](docs/version_plan.md)。
+
 - 接入 SQLite 保存会话和工单草稿。
 - 增加完整多轮对话状态管理。
 - 将知识库读取与摘要生成进一步结构化。
