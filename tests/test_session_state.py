@@ -1,0 +1,65 @@
+from backend.session_state import (
+    get_or_create_session,
+    reset_sessions,
+    update_session_with_message,
+)
+
+
+def setup_function() -> None:
+    reset_sessions()
+
+
+def test_new_session_can_be_created() -> None:
+    session = get_or_create_session("demo-session")
+
+    assert session["session_id"] == "demo-session"
+    assert session["category"] == "other"
+    assert session["messages"] == []
+
+
+def test_user_message_is_written_to_messages() -> None:
+    session = update_session_with_message("demo-session", "user", "数据库连接超时")
+
+    assert session["messages"] == [{"role": "user", "content": "数据库连接超时"}]
+
+
+def test_latest_user_message_updates() -> None:
+    update_session_with_message("demo-session", "user", "数据库连接超时")
+    session = update_session_with_message("demo-session", "user", "GaussDB，端口 8000")
+
+    assert session["latest_user_message"] == "GaussDB，端口 8000"
+
+
+def test_database_connection_extracts_port() -> None:
+    update_session_with_message("demo-session", "user", "数据库连接超时")
+    session = update_session_with_message("demo-session", "user", "端口 8000")
+
+    assert "端口：8000" in session["collected_info"]
+
+
+def test_database_connection_extracts_telnet_failure() -> None:
+    update_session_with_message("demo-session", "user", "数据库连接超时")
+    session = update_session_with_message("demo-session", "user", "telnet 不通")
+
+    assert "telnet 结果：不通" in session["collected_info"]
+
+
+def test_collected_info_is_removed_from_missing_info() -> None:
+    update_session_with_message("demo-session", "user", "数据库连接超时")
+    session = update_session_with_message("demo-session", "user", "GaussDB，端口 8000，telnet 不通")
+
+    assert "端口" not in session["missing_info"]
+    assert "telnet 结果" not in session["missing_info"]
+    assert "数据库类型" not in session["missing_info"]
+
+
+def test_sessions_are_isolated_by_session_id() -> None:
+    first = update_session_with_message("session-a", "user", "数据库连接超时 端口 8000")
+    second = update_session_with_message("session-b", "user", "权限不足 denied")
+
+    assert first["session_id"] == "session-a"
+    assert second["session_id"] == "session-b"
+    assert first["category"] == "database_connection"
+    assert second["category"] == "permission_error"
+    assert "端口：8000" in first["collected_info"]
+    assert "端口：8000" not in second["collected_info"]

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from backend.agent import build_support_reply
 from backend.classifier import ClassificationResult
+from backend.session_state import get_or_create_session
 from backend.ticket_summary import generate_ticket_summary
 
 
@@ -32,6 +33,7 @@ class ChatResponse(BaseModel):
     classification: ClassificationResult
     knowledge: dict[str, str | bool]
     next_questions: list[str]
+    session_state: dict[str, list[str]]
 
 
 class SummaryRequest(BaseModel):
@@ -62,7 +64,7 @@ def health() -> dict[str, str]:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
-    support_reply = build_support_reply(request.message)
+    support_reply = build_support_reply(request.session_id, request.message)
     return ChatResponse(
         session_id=request.session_id,
         **support_reply,
@@ -71,4 +73,5 @@ def chat(request: ChatRequest) -> ChatResponse:
 
 @app.post("/summary", response_model=SummaryResponse)
 def summary(request: SummaryRequest) -> SummaryResponse:
-    return SummaryResponse(**generate_ticket_summary(request.session_id, request.messages))
+    messages = request.messages or get_or_create_session(request.session_id)["messages"]
+    return SummaryResponse(**generate_ticket_summary(request.session_id, messages))

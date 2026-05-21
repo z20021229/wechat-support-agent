@@ -1,9 +1,14 @@
 from fastapi.testclient import TestClient
 
 from backend.main import app
+from backend.session_state import reset_sessions
 
 
 client = TestClient(app)
+
+
+def setup_function() -> None:
+    reset_sessions()
 
 
 def test_health() -> None:
@@ -29,9 +34,7 @@ def test_chat_returns_mock_reply() -> None:
     data = response.json()
 
     assert data["session_id"] == "demo-session"
-    assert data["reply"] == (
-        "我判断这可能是数据库连接问题。请先补充数据库类型、版本、连接地址、端口、完整报错，以及 ping/telnet 检查结果。"
-    )
+    assert data["reply"] == "我判断这可能是数据库连接问题。请先补充数据库类型、版本、连接地址、端口、完整报错，以及 ping/telnet 检查结果。"
     assert data["stage"] == "collecting_info"
     assert data["classification"] == {
         "category": "database_connection",
@@ -45,6 +48,40 @@ def test_chat_returns_mock_reply() -> None:
     }
     assert "数据库类型和版本是什么？" in data["next_questions"]
     assert "content" not in data["knowledge"]
+    assert data["session_state"] == {
+        "collected_info": [],
+        "missing_info": ["数据库类型", "数据库版本", "连接地址", "端口", "完整报错", "ping 结果", "telnet 结果"],
+    }
+
+
+def test_chat_returns_dynamic_next_questions_from_session_state() -> None:
+    client.post(
+        "/chat",
+        json={
+            "session_id": "state-session",
+            "message": "数据库连接超时",
+        },
+    )
+
+    response = client.post(
+        "/chat",
+        json={
+            "session_id": "state-session",
+            "message": "GaussDB，端口 8000，telnet 不通",
+        },
+    )
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["session_state"]["collected_info"] == [
+        "数据库类型：GaussDB",
+        "端口：8000",
+        "telnet 结果：不通",
+    ]
+    assert "端口" not in data["session_state"]["missing_info"]
+    assert "telnet 结果" not in data["session_state"]["missing_info"]
+    assert "端口是什么？" not in data["next_questions"]
+    assert "telnet 检查结果是什么？" not in data["next_questions"]
 
 
 def test_summary_returns_mock_ticket_summary() -> None:
@@ -83,3 +120,35 @@ def test_summary_returns_mock_ticket_summary() -> None:
     assert "possible_causes" in data
     assert "suggested_steps" in data
     assert "follow_up" in data
+
+
+def test_summary_uses_session_messages_when_request_messages_empty() -> None:
+    client.post(
+        "/chat",
+        json={
+            "session_id": "summary-session",
+            "message": "数据库连接超时",
+        },
+    )
+    client.post(
+        "/chat",
+        json={
+            "session_id": "summary-session",
+            "message": "GaussDB，端口 8000，telnet 不通",
+        },
+    )
+
+    response = client.post(
+        "/summary",
+        json={
+            "session_id": "summary-session",
+            "messages": [],
+        },
+    )
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["category"] == "database_connection"
+    assert "数据库类型：GaussDB" in data["collected_info"]
+    assert "端口：8000" in data["collected_info"]
+    assert "telnet 检查：不通" in data["collected_info"]

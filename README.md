@@ -184,6 +184,11 @@ python -m pytest tests/test_ticket_summary.py
 ## 当前完成状态
 当前状态：第 7 阶段：GitHub documentation and demo examples completed。
 
+v0.2.0 in progress:
+- Session state management added.
+- In-memory session tracking.
+- Dynamic next questions based on missing information.
+
 已完成：
 - FastAPI mock API：`GET /health`、`POST /chat`、`POST /summary`。
 - 前端模拟微信客服聊天页面。
@@ -194,6 +199,7 @@ python -m pytest tests/test_ticket_summary.py
 - GitHub 展示文档和演示案例。
 
 ## 未完成项
+- 当前 session state 仅为内存版，服务重启后会话丢失。
 - 未接入真实微信。
 - 未接入真实 LLM API。
 - 未实现 SQLite。
