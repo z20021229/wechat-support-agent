@@ -190,6 +190,8 @@ v0.2.0 in progress:
 - Dynamic next questions based on missing information.
 - Frontend session state display added for collected and missing information.
 - The chat page can demonstrate dynamic follow-up questions across turns.
+- The frontend creates a fresh `session_id` for each new conversation.
+- Clearing a conversation resets the current in-memory session to avoid stale state.
 
 已完成：
 - FastAPI mock API：`GET /health`、`POST /chat`、`POST /summary`。
@@ -202,6 +204,7 @@ v0.2.0 in progress:
 
 ## 未完成项
 - 当前 session state 仅为内存版，服务重启后会话丢失。
+- v0.3.0 才会实现 SQLite 会话和工单持久化。
 - 未接入真实微信。
 - 未接入真实 LLM API。
 - 未实现 SQLite。

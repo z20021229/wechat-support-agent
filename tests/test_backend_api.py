@@ -152,3 +152,92 @@ def test_summary_uses_session_messages_when_request_messages_empty() -> None:
     assert "数据库类型：GaussDB" in data["collected_info"]
     assert "端口：8000" in data["collected_info"]
     assert "telnet 检查：不通" in data["collected_info"]
+
+
+def test_session_reset_endpoint_is_available() -> None:
+    response = client.post(
+        "/session/reset",
+        json={
+            "session_id": "reset-session",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "session_id": "reset-session",
+        "reset": True,
+    }
+
+
+def test_chat_after_reset_does_not_return_old_collected_info() -> None:
+    client.post(
+        "/chat",
+        json={
+            "session_id": "reset-session",
+            "message": "数据库连接超时",
+        },
+    )
+    client.post(
+        "/chat",
+        json={
+            "session_id": "reset-session",
+            "message": "GaussDB，端口 8000，telnet 不通",
+        },
+    )
+
+    reset_response = client.post(
+        "/session/reset",
+        json={
+            "session_id": "reset-session",
+        },
+    )
+    response = client.post(
+        "/chat",
+        json={
+            "session_id": "reset-session",
+            "message": "数据库连接超时",
+        },
+    )
+    data = response.json()
+
+    assert reset_response.status_code == 200
+    assert response.status_code == 200
+    assert data["session_state"]["collected_info"] == []
+    assert "数据库类型" in data["session_state"]["missing_info"]
+    assert "端口" in data["session_state"]["missing_info"]
+    assert "telnet 结果" in data["session_state"]["missing_info"]
+    assert "GaussDB" not in data["reply"]
+    assert "8000" not in data["reply"]
+    assert "telnet 结果：不通" not in data["reply"]
+
+
+def test_chat_sessions_do_not_share_collected_info() -> None:
+    client.post(
+        "/chat",
+        json={
+            "session_id": "session-a",
+            "message": "数据库连接超时",
+        },
+    )
+    client.post(
+        "/chat",
+        json={
+            "session_id": "session-a",
+            "message": "GaussDB，端口 8000，telnet 不通",
+        },
+    )
+
+    response = client.post(
+        "/chat",
+        json={
+            "session_id": "session-b",
+            "message": "数据库连接超时",
+        },
+    )
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["session_state"]["collected_info"] == []
+    assert "数据库类型" in data["session_state"]["missing_info"]
+    assert "端口" in data["session_state"]["missing_info"]
+    assert "telnet 结果" in data["session_state"]["missing_info"]

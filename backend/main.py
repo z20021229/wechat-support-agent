@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from backend.agent import build_support_reply
 from backend.classifier import ClassificationResult
-from backend.session_state import get_or_create_session
+from backend.session_state import get_or_create_session, reset_session
 from backend.ticket_summary import generate_ticket_summary
 
 
@@ -39,6 +39,15 @@ class ChatResponse(BaseModel):
 class SummaryRequest(BaseModel):
     session_id: str
     messages: list[Any] = Field(default_factory=list)
+
+
+class SessionResetRequest(BaseModel):
+    session_id: str
+
+
+class SessionResetResponse(BaseModel):
+    session_id: str
+    reset: bool
 
 
 class SummaryResponse(BaseModel):
@@ -75,3 +84,9 @@ def chat(request: ChatRequest) -> ChatResponse:
 def summary(request: SummaryRequest) -> SummaryResponse:
     messages = request.messages or get_or_create_session(request.session_id)["messages"]
     return SummaryResponse(**generate_ticket_summary(request.session_id, messages))
+
+
+@app.post("/session/reset", response_model=SessionResetResponse)
+def reset_session_endpoint(request: SessionResetRequest) -> SessionResetResponse:
+    reset_session(request.session_id)
+    return SessionResetResponse(session_id=request.session_id, reset=True)

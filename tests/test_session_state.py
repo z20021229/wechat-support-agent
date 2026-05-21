@@ -1,5 +1,6 @@
 from backend.session_state import (
     get_or_create_session,
+    reset_session,
     reset_sessions,
     update_session_with_message,
 )
@@ -15,6 +16,7 @@ def test_new_session_can_be_created() -> None:
     assert session["session_id"] == "demo-session"
     assert session["category"] == "other"
     assert session["messages"] == []
+    assert session["collected_info"] == []
 
 
 def test_user_message_is_written_to_messages() -> None:
@@ -63,3 +65,39 @@ def test_sessions_are_isolated_by_session_id() -> None:
     assert second["category"] == "permission_error"
     assert "端口：8000" in first["collected_info"]
     assert "端口：8000" not in second["collected_info"]
+
+
+def test_session_b_does_not_inherit_database_details_from_session_a() -> None:
+    update_session_with_message("session-a", "user", "数据库连接超时")
+    update_session_with_message("session-a", "user", "GaussDB，端口 8000，telnet 不通")
+
+    session_b = update_session_with_message("session-b", "user", "数据库连接超时")
+
+    assert session_b["collected_info"] == []
+    assert "数据库类型" in session_b["missing_info"]
+    assert "端口" in session_b["missing_info"]
+    assert "telnet 结果" in session_b["missing_info"]
+
+
+def test_reset_session_clears_collected_info() -> None:
+    update_session_with_message("demo-session", "user", "数据库连接超时")
+    update_session_with_message("demo-session", "user", "GaussDB，端口 8000，telnet 不通")
+
+    reset_session("demo-session")
+    session = get_or_create_session("demo-session")
+
+    assert session["collected_info"] == []
+    assert session["messages"] == []
+    assert session["latest_user_message"] == ""
+
+
+def test_new_database_connection_session_starts_with_missing_info_only() -> None:
+    session = update_session_with_message("fresh-session", "user", "数据库连接超时")
+
+    assert session["collected_info"] == []
+    assert "数据库类型" in session["missing_info"]
+    assert "端口" in session["missing_info"]
+    assert "telnet 结果" in session["missing_info"]
+    assert "数据库类型：GaussDB" not in session["collected_info"]
+    assert "端口：8000" not in session["collected_info"]
+    assert "telnet 结果：不通" not in session["collected_info"]

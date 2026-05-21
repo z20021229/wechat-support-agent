@@ -31,6 +31,10 @@ def reset_sessions() -> None:
     SESSION_STORE.clear()
 
 
+def reset_session(session_id: str) -> None:
+    SESSION_STORE.pop(session_id, None)
+
+
 def get_or_create_session(session_id: str) -> dict[str, Any]:
     if session_id not in SESSION_STORE:
         SESSION_STORE[session_id] = _new_session(session_id)

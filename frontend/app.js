@@ -1,5 +1,4 @@
 const API_BASE_URL = "http://127.0.0.1:8000";
-const SESSION_ID = "demo-session";
 
 const messageList = document.querySelector("#messageList");
 const chatForm = document.querySelector("#chatForm");
@@ -15,6 +14,15 @@ const missingInfoList = document.querySelector("#missingInfoList");
 
 const messages = [];
 const welcomeText = "你好，我是技术支持 Agent。请描述你遇到的问题，我会先收集必要信息。";
+let sessionId = createSessionId();
+
+function createSessionId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 function appendMessage(role, text, metaText = "") {
   const item = document.createElement("article");
@@ -140,7 +148,9 @@ function renderSummary(data) {
   summaryPanel.hidden = false;
 }
 
-function resetConversation() {
+async function resetConversation() {
+  const previousSessionId = sessionId;
+  sessionId = createSessionId();
   messages.length = 0;
   summaryContent.replaceChildren();
   summaryPanel.hidden = true;
@@ -149,6 +159,14 @@ function resetConversation() {
   appendMessage("agent", welcomeText);
   messageInput.value = "";
   messageInput.focus();
+
+  try {
+    await postJson("/session/reset", {
+      session_id: previousSessionId,
+    });
+  } catch (error) {
+    // A fresh session_id is already active, so the UI must not reuse stale state.
+  }
 }
 
 chatForm.addEventListener("submit", async (event) => {
@@ -166,7 +184,7 @@ chatForm.addEventListener("submit", async (event) => {
 
   try {
     const data = await postJson("/chat", {
-      session_id: SESSION_ID,
+      session_id: sessionId,
       message,
     });
 
@@ -192,7 +210,7 @@ summaryButton.addEventListener("click", async () => {
 
   try {
     const data = await postJson("/summary", {
-      session_id: SESSION_ID,
+      session_id: sessionId,
       messages,
     });
 
