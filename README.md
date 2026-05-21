@@ -5,6 +5,13 @@ wechat-support-agent 是一个“微信/类微信远程技术支持 Agent 分身
 
 当前状态：第 7 阶段：GitHub documentation and demo examples completed。
 
+Release 状态：`v0.1.0` MVP release prepared。
+
+发布材料：
+- [CHANGELOG.md](CHANGELOG.md)
+- [RELEASE_NOTES.md](RELEASE_NOTES.md)
+- [docs/final_acceptance.md](docs/final_acceptance.md)
+
 ## 项目背景
 远程技术支持经常需要重复询问客户的环境、报错、操作步骤和影响范围。很多问题在进入人工深度排查前，都可以先由 Agent 完成基础接待、分类和信息收集。
 
