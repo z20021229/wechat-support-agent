@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from backend.agent import build_support_reply
 from backend.classifier import ClassificationResult
+from backend.ticket_summary import generate_ticket_summary
 
 
 SERVICE_NAME = "wechat-support-agent"
@@ -39,9 +40,16 @@ class SummaryRequest(BaseModel):
 
 
 class SummaryResponse(BaseModel):
+    session_id: str
     title: str
-    summary: str
+    category: str
+    label: str
+    problem_description: str
+    collected_info: list[str]
+    possible_causes: list[str]
+    suggested_steps: list[str]
     status: str
+    follow_up: list[str]
 
 
 @app.get("/health")
@@ -63,8 +71,4 @@ def chat(request: ChatRequest) -> ChatResponse:
 
 @app.post("/summary", response_model=SummaryResponse)
 def summary(request: SummaryRequest) -> SummaryResponse:
-    return SummaryResponse(
-        title="待确认的问题标题",
-        summary="当前为 mock 工单摘要，后续阶段会根据聊天记录生成完整内容。",
-        status="draft",
-    )
+    return SummaryResponse(**generate_ticket_summary(request.session_id, request.messages))

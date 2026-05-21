@@ -52,13 +52,34 @@ def test_summary_returns_mock_ticket_summary() -> None:
         "/summary",
         json={
             "session_id": "demo-session",
-            "messages": [],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "数据库连接超时",
+                },
+                {
+                    "role": "agent",
+                    "content": "请补充数据库类型、版本、连接地址、端口、完整报错，以及 ping/telnet 检查结果。",
+                },
+                {
+                    "role": "user",
+                    "content": "GaussDB，端口 8000，telnet 不通",
+                },
+            ],
         },
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "title": "待确认的问题标题",
-        "summary": "当前为 mock 工单摘要，后续阶段会根据聊天记录生成完整内容。",
-        "status": "draft",
-    }
+    data = response.json()
+
+    assert data["session_id"] == "demo-session"
+    assert data["title"] == "数据库连接超时问题"
+    assert data["category"] == "database_connection"
+    assert data["label"] == "数据库连接问题"
+    assert data["status"] == "draft"
+    assert "数据库类型：GaussDB" in data["collected_info"]
+    assert "端口：8000" in data["collected_info"]
+    assert "telnet 检查：不通" in data["collected_info"]
+    assert "possible_causes" in data
+    assert "suggested_steps" in data
+    assert "follow_up" in data
