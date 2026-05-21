@@ -15,7 +15,7 @@ wechat-support-agent 是一个“微信远程技术支持 Agent 分身”的 MVP
 - 排查建议生成。
 - 工单摘要生成。
 
-当前仓库处于第 3 阶段：Issue classifier completed。已完成后端 FastAPI mock 服务、前端模拟聊天页面和关键词规则问题分类，真实微信接入、真实 LLM API、SQLite、知识库读取和完整多轮对话状态管理尚未实现。
+当前仓库处于第 4 阶段：Knowledge base and support prompts completed。已完成后端 FastAPI mock 服务、前端模拟聊天页面、关键词规则问题分类、6 类技术支持知识库和支持话术模板，真实微信接入、真实 LLM API、SQLite、知识库自动读取和完整多轮对话状态管理尚未实现。
 
 ## 技术栈
 - 后端：Python FastAPI
@@ -54,7 +54,7 @@ wechat-support-agent/
 ```
 
 ## 当前状态
-当前状态：第 3 阶段：Issue classifier completed。
+当前状态：第 4 阶段：Knowledge base and support prompts completed。
 
 当前已完成：
 - FastAPI 后端 mock 服务。
@@ -68,12 +68,16 @@ wechat-support-agent/
 - 关键词规则分类。
 - `/chat` 返回 `classification` 字段。
 - 不同分类返回不同 mock 追问话术。
+- 6 类技术支持知识库。
+- 支持 Agent 话术模板。
+- 工单摘要 Prompt。
+- 安全规则 Prompt。
 
 当前未完成：
 - 未接入真实微信。
 - 未接入真实 LLM API。
 - 未实现 SQLite。
-- 未实现知识库读取。
+- 未实现知识库自动读取。
 - 未实现完整多轮对话状态管理。
 
 ## 后端本地启动
